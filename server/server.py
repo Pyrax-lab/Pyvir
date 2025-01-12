@@ -5,7 +5,7 @@ import os
 import webbrowser
 import platform
 #import psutil
-#from PIL import ImageGrab
+from PIL import ImageGrab
 import time
 from datetime import datetime
 # Настройки сервера
@@ -14,9 +14,10 @@ PORT = 8080       # Порт для подключения
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
-server_socket.listen()
+server_socket.listen(1)
+print("Сервер запущен")
 
-conn, addr = server_socket.accept()
+#conn, addr = server_socket.accept()
 def heandle_client(conn, addr):
 
 
@@ -25,11 +26,13 @@ def heandle_client(conn, addr):
     while True:
         try:
             # Получение команды
+            
             command = conn.recv(4096).decode("utf-8").strip()
-            if command.lower() == 'exit' :
+
+            if command.lower() == 'exit':
                 break
 
-            command = conn.recv(4096).decode("utf-8").strip()
+            
             if command.lower() == 'close_server':
                 conn.close()
                 server_socket.close()
@@ -45,8 +48,10 @@ def heandle_client(conn, addr):
 
             elif command.startswith("open_calculator") or command.startswith("1"):
                 # Открыть калькулятор
+                print(1)
                 if os.name == "nt":  # Windows
                     subprocess.Popen("calc.exe")
+                    print(1)
                 # elif os.name == "posix":  # Linux/Mac
                 #     subprocess.Popen(["gnome-calculator"])
                 conn.send("Калькулятор запущен.".encode("utf-8"))
@@ -140,6 +145,14 @@ def heandle_client(conn, addr):
                 else:
                     subprocess.run(["notify-send", message], check=True)
                 conn.send(f"Сообщение '{message}' отправлено.".encode("utf-8"))
+
+
+            elif command.startswith("screenshot") :
+                screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot.png")
+                screenshot = ImageGrab.grab()
+                screenshot.save(screenshot_path)
+                conn.send(f"Скриншот сохранен на сервере: {screenshot_path}".encode("utf-8"))
+
 
             else:
                 # Выполнение произвольной команды

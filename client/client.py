@@ -48,14 +48,16 @@ while True:
     print(Fore.GREEN + "10. change_time <время> - изменить системное время (пример: '20 2025-01-12 12:30:00').")
     print(Fore.GREEN + "11. ping <адрес> - выполнить пинг указанного адреса.")
     print(Fore.GREEN + "12. show_message <текст> - показать всплывающее сообщение.")
+    print(Fore.GREEN + "13. screenshot - зделать скриншот.")
     #print(Fore.GREEN + "31. screenshot - создать скриншот и сохранить на сервере.")
     print(Fore.GREEN + "exit. - выйти из программы.")
     print(Fore.GREEN + "server_close. - принудительно закрыть сервер.")
 
 
     command = input("Введите команду: ").strip()
-
+    print("-")
     client_socket.send(command.encode("utf-8"))
+    print("--")
 
     if command.lower() == 'exit':
         print("Выход из программы.")
@@ -75,7 +77,7 @@ while True:
                     file.write(data)
             print(f"Файл {file_name} сохранен.")
         else:
-            print(client_socket.recv(4096).decode("utf-8"))
+            print(response)
 
 
     # Получение результата
