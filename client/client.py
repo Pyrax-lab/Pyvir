@@ -17,6 +17,13 @@ while True:
     print("4. change_dir <путь> - перейти в другую директорию.")
     print("5. get_cwd - показать текущую директорию.")
     print("6. get_file <имя_файла> - скачать файл с сервера.")
+    print("7. get_system_info - характеристики ПК")
+    print("8. open_website <URL> - открыть сайт")
+    print("9. uptime - показать время работы системы.")
+    print("10. change_time <время> - изменить системное время (пример: '20 2025-01-12 12:30:00').")
+    print("11. ping <адрес> - выполнить пинг указанного адреса.")
+    print("12. show_message <текст> - показать всплывающее сообщение.")
+    #print("31. screenshot - создать скриншот и сохранить на сервере.")
     print("0. exit - выйти из программы.")
     command = input("Введите команду: ").strip()
 
@@ -28,7 +35,7 @@ while True:
 
     # Обработка специальных команд
     if command.startswith("get_file"):
-        response = client_socket.recv(1024).decode("utf-8")
+        response = client_socket.recv(4096).decode("utf-8")
         if response == "FILE_TRANSFER_START":
             file_name = command.split(maxsplit=1)[1]
             with open(file_name, "wb") as file:
@@ -40,7 +47,7 @@ while True:
                     file.write(data)
             print(f"Файл {file_name} сохранен.")
         else:
-            print(response)
+            print(client_socket.recv(4096).decode("utf-8"))
 
 
     # Получение результата

