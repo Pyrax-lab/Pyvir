@@ -17,124 +17,150 @@ server_socket.bind((HOST, PORT))
 server_socket.listen()
 
 conn, addr = server_socket.accept()
+def heandle_client(conn, addr):
 
-current_dir = os.getcwd()  # Текущая директория сервера
+
+    current_dir = os.getcwd()  # Текущая директория сервера
+
+    while True:
+        try:
+            # Получение команды
+            command = conn.recv(4096).decode("utf-8").strip()
+            if command.lower() == 'exit' :
+                break
+
+            command = conn.recv(4096).decode("utf-8").strip()
+            if command.lower() == 'close_server':
+                conn.close()
+                server_socket.close()
+
+            elif command.startswith("open_cmd") or command.startswith("0"):
+                # Открыть калькулятор
+                if os.name == "nt":  # Windows
+                    subprocess.Popen("cmd.exe")
+                # elif os.name == "posix":  # Linux/Mac
+                #     subprocess.Popen(["gnome-calculator"])
+                #conn.send(" запущен.".encode("utf-8"))
+            
+
+            elif command.startswith("open_calculator") or command.startswith("1"):
+                # Открыть калькулятор
+                if os.name == "nt":  # Windows
+                    subprocess.Popen("calc.exe")
+                # elif os.name == "posix":  # Linux/Mac
+                #     subprocess.Popen(["gnome-calculator"])
+                conn.send("Калькулятор запущен.".encode("utf-8"))
+
+            elif command.startswith("create_file") or command.startswith("2"):
+                # Создать файл на рабочем столе
+                _, message, file_name = command.split(maxsplit = 2)
+                print(f"'_' = {_}, file_name = {file_name}")
+                file_path = os.path.join(os.path.expanduser("~"), "Desktop", f"{file_name}.txt")
+                with open(file_path, "w") as f:
+                    f.write(message)
+                conn.send(f"Файл создан: {file_path}".encode("utf-8"))
+
+            # Просмотр текущей директории
+            if command == "list_dir" or command.startswith("3"):
+                files = os.listdir(current_dir)
+                conn.send("\n".join(files).encode("utf-8"))
+
+            # Перемещение в другую директорию
+            elif command.startswith("change_dir") or command.startswith("4"):
+                _, path = command.split(maxsplit=1)
+                new_dir = os.path.join(current_dir, path)
+                if os.path.isdir(new_dir):
+                    current_dir = new_dir
+                    conn.send(f"Текущая директория: {current_dir}".encode("utf-8"))
+                else:
+                    conn.send("Ошибка: Указанная директория не существует.".encode("utf-8"))
+
+            # Получение текущей директории
+            elif command == "get_cwd" or command.startswith("5"):
+                conn.send(current_dir.encode("utf-8"))
+
+            # Передача файла клиенту
+            elif command.startswith("get_file") or command.startswith("6"):
+                _, file_name = command.split(maxsplit=1)
+                file_path = os.path.join(current_dir, file_name)
+                if os.path.isfile(file_path):
+                    conn.send(b"FILE_TRANSFER_START")
+                    with open(file_path, "rb") as file:
+                        data = file.read()
+                        conn.sendall(data)
+                    conn.send(b"FILE_TRANSFER_END")
+                else:
+                    conn.send("Ошибка: Файл не найден.".encode("utf-8"))
+
+        
+            elif command == "get_system_info" or command.startswith("7"):
+                # Получение характеристик ПК
+                system_info = {
+                    "OS": platform.system(),
+                    "OS Version": platform.version(),
+                    "Processor": platform.processor(),
+                }
+                info = "\n".join([f"{key}: {value}" for key, value in system_info.items()])
+                conn.send(info.encode("utf-8"))
+
+            elif command.startswith("open_website") or command.startswith("8"):
+                # Открытие сайта
+                _, url = command.split(maxsplit=1)
+                try:
+                    webbrowser.open(url)
+                    conn.send(f"Сайт открыт: {url}".encode("utf-8"))
+                except Exception as e:
+                    conn.send(f"Ошибка при открытии сайта: {e}".encode("utf-8"))
+
+
+            elif command.startswith("uptime") or command.startswith("9"):
+                with open("/proc/uptime", "r") as f:
+                    uptime_seconds = float(f.readline().split()[0])
+                uptime_str = time.strftime("%H:%M:%S", time.gmtime(uptime_seconds))
+                conn.send(f"Время работы системы: {uptime_str}".encode("utf-8"))
+
+            elif command.startswith("change_time") or command.startswith("10"):
+                try:
+                    _, new_time = command.split(maxsplit=1)
+                    subprocess.run(["date", "-s", new_time], check=True)
+                    conn.send(f"Время сервера успешно изменено на {new_time}".encode("utf-8"))
+                except Exception as e:
+                    conn.send(f"Ошибка изменения времени: {e}".encode("utf-8"))
+
+            elif command.startswith("ping") or command.startswith("11"):
+                _, address = command.split(maxsplit=1)
+                result = subprocess.getoutput(f"ping -c 4 {address}")
+                conn.send(result.encode("utf-8"))
+
+
+            elif command.startswith("show_message") or command.startswith("12"):
+                _, message = command.split(maxsplit=1)
+                if os.name == "nt":  # Windows
+                    subprocess.run(["msg", "*", message], check=True)
+                else:
+                    subprocess.run(["notify-send", message], check=True)
+                conn.send(f"Сообщение '{message}' отправлено.".encode("utf-8"))
+
+            else:
+                # Выполнение произвольной команды
+                output = subprocess.getoutput(command)
+                conn.send(output.encode("utf-8"))
+
+        except Exception as e:
+            conn.send(f"Ошибка: {e}".encode("utf-8"))
+
+    conn.close()
 
 while True:
     try:
-        # Получение команды
-        command = conn.recv(4096).decode("utf-8").strip()
-        if command.lower() == 'exit' or command.startswith("0"):
-            break
-
-        if command.startswith("create_file") or command.startswith("1"):
-            # Создать файл на рабочем столе
-            _, message, file_name = command.split(maxsplit = 2)
-            print(f"'_' = {_}, file_name = {file_name}")
-            file_path = os.path.join(os.path.expanduser("~"), "Desktop", f"{file_name}.txt")
-            with open(file_path, "w") as f:
-                f.write(message)
-            conn.send(f"Файл создан: {file_path}".encode("utf-8"))
-
-        elif command.startswith("open_calculator") or command.startswith("2"):
-            # Открыть калькулятор
-            if os.name == "nt":  # Windows
-                subprocess.Popen("calc.exe")
-            # elif os.name == "posix":  # Linux/Mac
-            #     subprocess.Popen(["gnome-calculator"])
-            conn.send("Калькулятор запущен.".encode("utf-8"))
-
-        
-        # Просмотр текущей директории
-        if command == "list_dir" or command.startswith("3"):
-            files = os.listdir(current_dir)
-            conn.send("\n".join(files).encode("utf-8"))
-
-        # Перемещение в другую директорию
-        elif command.startswith("change_dir") or command.startswith("4"):
-            _, path = command.split(maxsplit=1)
-            new_dir = os.path.join(current_dir, path)
-            if os.path.isdir(new_dir):
-                current_dir = new_dir
-                conn.send(f"Текущая директория: {current_dir}".encode("utf-8"))
-            else:
-                conn.send("Ошибка: Указанная директория не существует.".encode("utf-8"))
-
-        # Получение текущей директории
-        elif command == "get_cwd" or command.startswith("5"):
-            conn.send(current_dir.encode("utf-8"))
-
-        # Передача файла клиенту
-        elif command.startswith("get_file") or command.startswith("6"):
-            _, file_name = command.split(maxsplit=1)
-            file_path = os.path.join(current_dir, file_name)
-            if os.path.isfile(file_path):
-                conn.send(b"FILE_TRANSFER_START")
-                with open(file_path, "rb") as file:
-                    data = file.read()
-                    conn.sendall(data)
-                conn.send(b"FILE_TRANSFER_END")
-            else:
-                conn.send("Ошибка: Файл не найден.".encode("utf-8"))
-
-       
-        elif command == "get_system_info" or command.startswith("7"):
-            # Получение характеристик ПК
-            system_info = {
-                "OS": platform.system(),
-                "OS Version": platform.version(),
-                "Processor": platform.processor(),
-            }
-            info = "\n".join([f"{key}: {value}" for key, value in system_info.items()])
-            conn.send(info.encode("utf-8"))
-
-        elif command.startswith("open_website") or command.startswith("8"):
-            # Открытие сайта
-            _, url = command.split(maxsplit=1)
-            try:
-                webbrowser.open(url)
-                conn.send(f"Сайт открыт: {url}".encode("utf-8"))
-            except Exception as e:
-                conn.send(f"Ошибка при открытии сайта: {e}".encode("utf-8"))
-
-
-        elif command.startswith("uptime") or command.startswith("9"):
-            with open("/proc/uptime", "r") as f:
-                uptime_seconds = float(f.readline().split()[0])
-            uptime_str = time.strftime("%H:%M:%S", time.gmtime(uptime_seconds))
-            conn.send(f"Время работы системы: {uptime_str}".encode("utf-8"))
-
-        elif command.startswith("change_time") or command.startswith("10"):
-            try:
-                _, new_time = command.split(maxsplit=1)
-                subprocess.run(["date", "-s", new_time], check=True)
-                conn.send(f"Время сервера успешно изменено на {new_time}".encode("utf-8"))
-            except Exception as e:
-                conn.send(f"Ошибка изменения времени: {e}".encode("utf-8"))
-
-        elif command.startswith("ping") or command.startswith("11"):
-            _, address = command.split(maxsplit=1)
-            result = subprocess.getoutput(f"ping -c 4 {address}")
-            conn.send(result.encode("utf-8"))
-
-
-        elif command.startswith("show_message") or command.startswith("12"):
-            _, message = command.split(maxsplit=1)
-            if os.name == "nt":  # Windows
-                subprocess.run(["msg", "*", message], check=True)
-            else:
-                subprocess.run(["notify-send", message], check=True)
-            conn.send(f"Сообщение '{message}' отправлено.".encode("utf-8"))
-
-        else:
-            # Выполнение произвольной команды
-            output = subprocess.getoutput(command)
-            conn.send(output.encode("utf-8"))
-
+        conn, addr = server_socket.accept()
+        heandle_client(conn, addr)
+    except KeyboardInterrupt:
+        print("\nСервер завершает работу.")
+        break
     except Exception as e:
-        conn.send(f"Ошибка: {e}".encode("utf-8"))
+        print(f"Ошибка сервера: {e}")
 
-conn.close()
 server_socket.close()
 
 
