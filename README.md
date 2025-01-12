@@ -1,1 +1,1 @@
-![Logotype](./docs/pyvir.jpg)
+![Logotype](./docs/pyvir.png)
