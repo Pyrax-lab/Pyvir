@@ -3,8 +3,11 @@ import subprocess
 import os
 import webbrowser
 import platform
-from PIL import ImageGrab
 import time
+
+import psutil
+
+from PIL import ImageGrab
 from datetime import datetime
 from io import BytesIO
 
@@ -101,10 +104,15 @@ def heandle_client(conn, addr):
         
             elif command == "get_system_info" or command.startswith("7"):
                 # Получение характеристик ПК
+                memory = psutil.virtual_memory()
                 system_info = {
                     "OS": platform.system(),
                     "OS Version": platform.version(),
                     "Processor": platform.processor(),
+                    "Memory": f"{memory.total / (1024 ** 3):.2f}",
+                    'Используется': f'{memory.used / (1024**3):.2f} ГБ',
+                    'Свободно': f'{memory.available / (1024**3):.2f} ГБ',
+                    'Процент использования': f'{memory.percent}%',
                 }
                 info = "\n".join([f"{key}: {value}" for key, value in system_info.items()])
                 conn.send(info.encode("utf-8"))
@@ -148,24 +156,10 @@ def heandle_client(conn, addr):
                 conn.send(f"Сообщение '{message}' отправлено.".encode("utf-8"))
 
 
-            # elif command.startswith("screenshot") :
-            #     screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot.png")
-            #     screenshot = ImageGrab.grab()
-            #     screenshot.save(screenshot_path)
-            #     conn.send(f"Скриншот сохранен на сервере: {screenshot_path}".encode("utf-8"))
+           
 
             elif command.startswith("screenshot"):
-                # Создание скриншота
-                # screenshot = ImageGrab.grab()
-                # screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot_server.png")
-                # screenshot.save(screenshot_path)
-
-                # # Отправка клиенту уведомления о начале передачи файла
-                # conn.send(b"FILE_TRANSFER_START")
-                # with open(screenshot_path, "rb") as file:
-                #     while (chunk := file.read(4096)):
-                #         conn.send(chunk)
-                # conn.send(b"FILE_TRANSFER_END")
+                
                 try:
                     # Создание скриншота
                     screenshot = ImageGrab.grab()

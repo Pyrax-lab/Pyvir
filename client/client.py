@@ -1,7 +1,7 @@
 import socket
 import os, io
 from colorama import Fore, Style, init
-import networkx
+
 # Настройки клиента
 SERVER_HOST = '192.168.0.97'  # IP второго ПК
 SERVER_PORT = 8080             # Тот же порт, что и на сервере
@@ -85,7 +85,7 @@ while True:
         if response == "FILE_TRANSFER_START":
             
             
-             = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot_client.png")
+            screenshot_path = os.path.join(os.path.expanduser("~"), "Desktop", "screenshot_client.png")
             with open(screenshot_path, "wb") as file:
                 while True:
                     chunk = client_socket.recv(4096)
