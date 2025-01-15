@@ -21,7 +21,7 @@ from colorama import Fore, Style, init
 init()
 
 logo = f"""
-{Fore.GREEN} 
+{Fore.YELLOW} 
 @@@@@@@   @@@ @@@  @@@  @@@  @@@  @@@@@@@   
 @@@@@@@@  @@@ @@@  @@@  @@@  @@@  @@@@@@@@  
 @@!  @@@  @@! !@@  @@!  @@@  @@!  @@!  @@@  
@@ -36,13 +36,10 @@ logo = f"""
 {Style.RESET_ALL}
 """
 
-menu = f"""
-{Fore.CYAN}Pyvir (v0.1)  - 2025
-            \nGitHub: https://github.com/Pyrax-lab/Pyvir\n\nUsing malware, including viruses\nand other malicious software, should\nonly be done on your personal computer\nand solely for educational purposes.
-{Style.RESET_ALL}
-"""
+menu = f"""{Fore.CYAN}Pyvir (v0.1)  - 2025{Style.RESET_ALL}"""
+ #           \nGitHub: https://github.com/Pyrax-lab/Pyvir\n\nUsing malware, including viruses\nand other malicious software, should\nonly be done on your personal computer\nand solely for educational purposes.
+
 
 # Печать баннера и меню
-print(logo)
-print(menu)
-a= input()
+
+
