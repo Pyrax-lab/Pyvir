@@ -1,2 +1,5 @@
 pillow
 psutil
+numpy
+mss
+opencv-python

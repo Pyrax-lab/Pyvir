@@ -12,10 +12,7 @@ from datetime import datetime
 from io import BytesIO
 
 
-
-#import psutil
-# Настройки сервера
-HOST = '0.0.0.0'  # Слушать все адреса
+HOST = '192.168.0.97'  # Слушать все адреса
 PORT = 8080       # Порт для подключения
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -233,6 +230,7 @@ def heandle_client(conn, addr):
                     conn.send(f"Ошибка: {e}".encode("utf-8"))
 
 
+            
 
             else:
                 # Выполнение произвольной команды
